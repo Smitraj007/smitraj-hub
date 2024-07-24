@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import os
 from PIL import Image
+import matplotlib.pyplot as plt
 
 # Function to load and preprocess an image from file path
 def load_image(filepath):
@@ -46,6 +47,26 @@ def find_similar_images(query_embedding, dataset_embeddings, dataset_paths, top_
     similar_images = [(dataset_paths[idx], similarities[0][idx]) for idx in indices]
     return similar_images
 
+# Function to display images with similarity scores
+def display_similar_images(query_image_path, similar_images):
+    fig = plt.figure(figsize=(10, 5))
+    
+    # Display query image
+    ax = fig.add_subplot(2, 3, 1)
+    ax.imshow(Image.open(query_image_path))
+    ax.set_title("Query Image")
+    ax.axis('off')
+    
+    # Display similar images
+    for i, (img_path, similarity) in enumerate(similar_images):
+        ax = fig.add_subplot(2, 3, i + 2)
+        ax.imshow(Image.open(img_path))
+        ax.set_title(f"Similarity: {similarity:.4f}")
+        ax.axis('off')
+    
+    plt.tight_layout()
+    plt.show()
+
 # Main function
 def main():
     # Step 1: Define paths and load images from a local folder
@@ -67,11 +88,8 @@ def main():
     # Find similar images
     similar_images = find_similar_images(query_embedding, dataset_embeddings, dataset_paths)
 
-    # Print results
-    print(f"Query Image: {query_image_path}")
-    print("Similar Images:")
-    for img_path, similarity in similar_images:
-        print(f"- {img_path}, Similarity: {similarity:.4f}")
+    # Step 5: Display query image and similar images with their similarity scores
+    display_similar_images(query_image_path, similar_images)
 
 if __name__ == "__main__":
     main()
