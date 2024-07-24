@@ -18,9 +18,11 @@ def load_image(filepath):
     image = transform(image)
     return image
 
-# Function to load ResNet50 model and extract features
-def load_resnet50():
-    model = models.resnet50(pretrained=True)
+# Function to load ResNet50 model from local path with weights
+def load_resnet50(model_path):
+    model = models.resnet50(pretrained=False)  # Load model without pretrained weights
+    state_dict = torch.load(model_path)
+    model.load_state_dict(state_dict)
     model = nn.Sequential(*list(model.children())[:-1])  # Remove the last fully connected layer
     return model
 
@@ -50,8 +52,9 @@ def main():
     data_folder = 'path_to_your_folder_containing_images'
     image_paths = [os.path.join(data_folder, img) for img in os.listdir(data_folder)]
 
-    # Step 2: Load pretrained ResNet50 model
-    resnet_model = load_resnet50()
+    # Step 2: Load pretrained ResNet50 model from local path with weights
+    model_path = 'path_to_downloaded_resnet50.pth'  # Replace with your local path to the downloaded model weights
+    resnet_model = load_resnet50(model_path)
 
     # Step 3: Extract embeddings for all images in the folder
     dataset_embeddings = extract_embeddings(resnet_model, image_paths)
