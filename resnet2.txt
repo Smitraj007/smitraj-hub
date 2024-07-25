@@ -47,6 +47,23 @@ def find_similar_images(query_embedding, dataset_embeddings, dataset_paths, top_
     similar_images = [(dataset_paths[idx], similarities[0][idx]) for idx in indices]
     return similar_images
 
+#Function to visualize embeddings
+def visualize_embeddings(embeddings, image_paths):
+    pca = PCA(n_components=2)
+    embeddings_2d = pca.fit_transform(embeddings)
+
+    plt.figure(figsize=(10, 8))
+    plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], alpha=0.5)
+
+    for i, img_path in enumerate(image_paths):
+        plt.annotate(os.path.basename(img_path), (embeddings_2d[i, 0], embeddings_2d[i, 1]))
+
+    plt.title('PCA Visualization of Image Embeddings')
+    plt.xlabel('Principal Component 1')
+    plt.ylabel('Principal Component 2')
+    plt.grid(True)
+    plt.show()
+
 # Function to display images with similarity scores
 def display_similar_images(query_image_path, similar_images):
     fig = plt.figure(figsize=(10, 5))
@@ -90,6 +107,9 @@ def main():
 
     # Step 5: Display query image and similar images with their similarity scores
     display_similar_images(query_image_path, similar_images)
+
+    # Step 6: Visualize embeddings using PCA
+    visualize_embeddings(dataset_embeddings, image_paths)
 
 if __name__ == "__main__":
     main()
