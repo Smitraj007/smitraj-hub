@@ -1,0 +1,115 @@
+import torch
+import torch.nn as nn
+import torchvision.models as models
+import torchvision.transforms as transforms
+import numpy as np
+import os
+from PIL import Image
+from chromadb import ChromaDB, VectorDocument
+from sklearn.metrics.pairwise import cosine_similarity
+from openai import clip
+import matplotlib.pyplot as plt
+
+# Function to load and preprocess an image from file path
+def load_image(filepath):
+    image = Image.open(filepath).convert('RGB')
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+    image = transform(image)
+    return image
+
+# Function to load ResNet50 model from local path with weights
+def load_resnet50(model_path):
+    model = models.resnet50(pretrained=False)  # Load model without pretrained weights
+    state_dict = torch.load(model_path)
+    model.load_state_dict(state_dict)
+    model = nn.Sequential(*list(model.children())[:-1])  # Remove the last fully connected layer
+    return model
+
+# Function to extract embeddings using ResNet model
+def extract_embeddings(model, image_paths):
+    model.eval()
+    embeddings = []
+    with torch.no_grad():
+        for img_path in image_paths:
+            image = load_image(img_path)
+            image = image.unsqueeze(0)  # Add batch dimension
+            features = model(image)
+            embeddings.append(features.squeeze().cpu().numpy())
+    embeddings = np.array(embeddings)
+    return embeddings
+
+# Function to initialize ChromaDB and add embeddings
+def initialize_chromadb(embeddings, image_paths):
+    db = ChromaDB()
+    for idx, embedding in enumerate(embeddings):
+        vector_doc = VectorDocument(id=str(idx), vector=embedding.tolist(), metadata={'image_path': image_paths[idx]})
+        db.add_document(vector_doc)
+    return db
+
+# Function to query using OpenAI CLIP model
+def query_clip_model(clip_model, preprocess, query_image_path, chromadb):
+    # Preprocess query image
+    query_image = preprocess(Image.open(query_image_path)).unsqueeze(0)
+    with torch.no_grad():
+        query_embedding = clip_model.encode_image(query_image).cpu().numpy()
+    
+    # Perform similarity search in ChromaDB
+    similar_docs = chromadb.query(query_embedding[0], top_k=5)
+    
+    # Get similar images
+    similar_images = [(doc.metadata['image_path'], doc.score) for doc in similar_docs]
+    return similar_images
+
+# Function to display images with similarity scores
+def display_similar_images(query_image_path, similar_images):
+    fig = plt.figure(figsize=(10, 5))
+    
+    # Display query image
+    ax = fig.add_subplot(2, 3, 1)
+    ax.imshow(Image.open(query_image_path))
+    ax.set_title("Query Image")
+    ax.axis('off')
+    
+    # Display similar images
+    for i, (img_path, similarity) in enumerate(similar_images):
+        ax = fig.add_subplot(2, 3, i + 2)
+        ax.imshow(Image.open(img_path))
+        ax.set_title(f"Similarity: {similarity:.4f}")
+        ax.axis('off')
+    
+    plt.tight_layout()
+    plt.show()
+
+# Main function
+def main():
+    # Step 1: Define paths and load images from a local folder
+    data_folder = 'path_to_your_folder_containing_images'
+    image_paths = [os.path.join(data_folder, img) for img in os.listdir(data_folder)]
+
+    # Step 2: Load pretrained ResNet50 model from local path with weights
+    model_path = 'path_to_downloaded_resnet50.pth'  # Replace with your local path to the downloaded model weights
+    resnet_model = load_resnet50(model_path)
+
+    # Step 3: Extract embeddings for all images in the folder
+    dataset_embeddings = extract_embeddings(resnet_model, image_paths)
+    dataset_paths = image_paths  # Store paths for reference
+
+    # Step 4: Initialize ChromaDB and store embeddings
+    chromadb = initialize_chromadb(dataset_embeddings, dataset_paths)
+
+    # Step 5: Load OpenAI CLIP model and preprocess
+    clip_model, preprocess = clip.load("ViT-B/32")
+
+    # Step 6: Query using CLIP model and find similar images
+    query_image_path = 'path_to_your_query_image.jpg'
+    similar_images = query_clip_model(clip_model, preprocess, query_image_path, chromadb)
+
+    # Step 7: Display query image and similar images with their similarity scores
+    display_similar_images(query_image_path, similar_images)
+
+if __name__ == "__main__":
+    main()
