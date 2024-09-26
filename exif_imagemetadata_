@@ -1,0 +1,117 @@
+from PIL import Image
+from PIL.ExifTags import GPSTAGS, TAGS
+
+
+def extract_image_data(image_path):
+  """
+  Extracts metadata, image size details, and creates a Google Maps link from an image.
+
+  Args:
+      image_path (str): Path to the image file.
+
+  Returns:
+      dict: A dictionary containing extracted information. Keys include:
+          - filename (str): Name of the image file.
+          - image_size (tuple): Image size (width, height).
+          - image_width (int): Width of the image.
+          - image_height (int): Height of the image.
+          - gps_data (dict, optional): GPS data if available. Keys include:
+              - GPSLatitude (list): Latitude coordinates.
+              - GPSLongitude (list): Longitude coordinates.
+              - GPSLatitudeRef (str): Latitude reference (N or S).
+              - GPSLongitudeRef (str): Longitude reference (E or W).
+              - google_maps_link (str, optional): Link to location on Google Maps.
+          - exif_data (dict, optional): Other extracted EXIF data (excluding GPS).
+  """
+  try:
+    image = Image.open(image_path)
+
+    # Extract image size details
+    image_size = image.size
+    image_width, image_height = image_size
+
+    # Extract GPS data
+    gps_data = {}
+    if image._getexif() is not None:
+      for tag, value in image._getexif().items():
+        tag_name = TAGS.get(tag)
+        if tag_name == "GPSInfo":
+          for key, val in value.items():
+            gps_data[GPSTAGS.get(key)] = val
+            if GPSTAGS.get(key) in ["GPSLatitude", "GPSLongitude"]:
+              gps_data[GPSTAGS.get(key)] = list(val)  # Convert coordinates to list
+            if GPSTAGS.get(key) == "GPSLatitudeRef":
+              gps_data["google_maps_link"] = create_google_maps_url(gps_data)
+        else:
+          # Exclude GPS data (optional)
+          # pass
+
+    # Extract other EXIF data (optional)
+    exif_data = {tag_name: value for tag, value in image._getexif().items() if tag_name != "GPSInfo"}
+
+    return {
+      "filename": image.filename,
+      "image_size": image_size,
+      "image_width": image_width,
+      "image_height": image_height,
+      "gps_data": gps_data if gps_data else None,
+      "exif_data": exif_data if exif_data else None,
+    }
+
+  except (IOError, FileNotFoundError):
+    print(f"Error: Could not open image file: {image_path}")
+    return None
+
+
+def create_google_maps_url(gps_coords):
+  """
+  Converts GPS coordinates to a Google Maps link.
+
+  Args:
+      gps_coords (dict): Dictionary containing GPS data.
+
+  Returns:
+      str: Google Maps link for the location.
+  """
+  if not gps_coords.get("google_maps_link"):
+    # Convert degrees/minutes/seconds to decimal degrees
+    dec_deg_lat = convert_decimal_degrees(
+      gps_coords["GPSLatitude"][0], gps_coords["GPSLatitude"][1], gps_coords["GPSLatitude"][2],
+      gps_coords["GPSLatitudeRef"]
+    )
+    dec_deg_lon = convert_decimal_degrees(
+      gps_coords["GPSLongitude"][0], gps_coords["GPSLongitude"][1], gps_coords["GPSLongitude"][2],
+      gps_coords["GPSLongitudeRef"]
+    )
+    gps_coords["google_maps_link"] = f"https://maps.google.com/?q={dec_deg_lat},{dec_deg_lon}"
+  return gps_coords["google_maps_link"]
+
+
+def convert_decimal_degrees(degree, minutes, seconds, direction):
+  decimal_degrees = degree + minutes / 60 + seconds / 3600
+  if direction in ("S", "W"):
+    decimal_degrees *= -1
+  return decimal_degrees
+
+
+# Example usage
+image_path = "path/to/your/image.jpg"  # Replace with the actual path to your image
+image_data = extract_image_data(image_path)
+
+if image_data:
+  print("Image Metadata:")
+  print(f"Filename: {image_data['filename']}")
+  print(f"Image Size: {image_data['image_size']}")
+  print(f"Image Width: {image_data['image_width']}")
+  print(f"Image Height: {image_data['image_height']}")
+
+  if image_data['gps_data']:
+    print("GPS Data:")
+    print(f"Latitude: {image_data['gps_data']['GPSLatitude']}")
+    print(f"Longitude: {image_data['gps_data']['GPSLongitude']}")
+    print(f"Google Maps Link: {image_data['gps_data']['google_maps_link']}")
+
+  if image_data['exif_data']:
+    print("Other EXIF Data:")
+    for key, value in image_data['exif_data'].items():
+      print(f"{key}: {value}")
