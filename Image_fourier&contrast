@@ -72,3 +72,39 @@ for index, row in df.iterrows():
     df.loc[index, 'image_contrast_score'] = contrast_score
 
 # Now your DataFrame will have the additional columns 'fourier_frequency_score' and 'image_contrast_score'
+
+
+
+'''If you get NaN values using above functon, 
+
+The NaN values you're getting from the calculate_image_contrast_score function are likely due to the np.corrcoef function. This function calculates the correlation coefficient between two arrays, and if one or both arrays have only a single element, it will return NaN.
+
+Here's a modified version of the calculate_image_contrast_score function that handles this case: '''
+
+def calculate_image_contrast_score(query_image_path, retrieved_image_path):
+    """Calculates the image contrast score for two images.
+
+    Args:
+        query_image_path (str): Path to the query image.
+        retrieved_image_path (str): Path to the retrieved image.
+
+    Returns:
+        float: The image contrast score.
+    """
+
+    # Load images
+    query_image = cv2.imread(query_image_path, cv2.IMREAD_GRAYSCALE)
+    retrieved_image = cv2.imread(retrieved_image_path, cv2.IMREAD_GRAYSCALE)
+
+    # Calculate image contrast
+    query_contrast = np.std(query_image)
+    retrieved_contrast = np.std(retrieved_image)
+
+    # Handle case where either contrast is zero
+    if query_contrast == 0 or retrieved_contrast == 0:
+        return 0
+
+    # Calculate image contrast score
+    contrast_score = np.corrcoef(query_contrast, retrieved_contrast)[0, 1]
+
+    return contrast_score
