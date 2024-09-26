@@ -1,0 +1,74 @@
+import cv2
+import numpy as np
+import scipy.fftpack as fft
+
+def calculate_fourier_frequency_score(query_image_path, retrieved_image_path):
+    """Calculates the Fourier frequency score for two images.
+
+    Args:
+        query_image_path (str): Path to the query image.
+        retrieved_image_path (str): Path to the retrieved image.
+
+    Returns:
+        float: The Fourier frequency score.
+    """
+
+    # Load images
+    query_image = cv2.imread(query_image_path, cv2.IMREAD_GRAYSCALE)
+    retrieved_image = cv2.imread(retrieved_image_path, cv2.IMREAD_GRAYSCALE)
+
+    # Calculate Fourier transforms
+    query_fft = fft.fft2(query_image)
+    retrieved_fft = fft.fft2(retrieved_image)
+
+    # Shift DC component to center
+    query_fft_shifted = np.fft.fftshift(query_fft)
+    retrieved_fft_shifted = np.fft.fftshift(retrieved_fft)
+
+    # Calculate magnitudes
+    query_fft_magnitude = np.abs(query_fft_shifted)
+    retrieved_fft_magnitude = np.abs(retrieved_fft_shifted)
+
+    # Calculate Fourier frequency score
+    fourier_score = np.corrcoef(query_fft_magnitude.ravel(), retrieved_fft_magnitude.ravel())[0, 1]
+
+    return fourier_score
+
+def calculate_image_contrast_score(query_image_path, retrieved_image_path):
+    """Calculates the image contrast score for two images.
+
+    Args:
+        query_image_path (str): Path to the query image.
+        retrieved_image_path (str): Path to the retrieved image.
+
+    Returns:
+        float: The image contrast score.
+    """
+
+    # Load images
+    query_image = cv2.imread(query_image_path, cv2.IMREAD_GRAYSCALE)
+    retrieved_image = cv2.imread(retrieved_image_path, cv2.IMREAD_GRAYSCALE)
+
+    # Calculate image contrast
+    query_contrast = np.std(query_image)
+    retrieved_contrast = np.std(retrieved_image)
+
+    # Calculate image contrast score
+    contrast_score = np.corrcoef(query_contrast, retrieved_contrast)[0, 1]
+
+    return contrast_score
+
+# Assuming you have a DataFrame named 'df' containing the existing columns
+# Iterate over each row and calculate the new scores
+for index, row in df.iterrows():
+    query_image_path = row['query_image_path']
+    retrieved_image_path = row['retrived_image_path']
+
+    fourier_score = calculate_fourier_frequency_score(query_image_path, retrieved_image_path)
+    contrast_score = calculate_image_contrast_score(query_image_path, retrieved_image_path)
+
+    # Add the new scores to the DataFrame
+    df.loc[index, 'fourier_frequency_score'] = fourier_score
+    df.loc[index, 'image_contrast_score'] = contrast_score
+
+# Now your DataFrame will have the additional columns 'fourier_frequency_score' and 'image_contrast_score'
