@@ -115,3 +115,52 @@ if image_data:
     print("Other EXIF Data:")
     for key, value in image_data['exif_data'].items():
       print(f"{key}: {value}")
+
+
+
+#### If there is not exif data ###
+
+from PIL import Image
+
+def extract_image_properties(image_path):
+  """
+  Extracts image properties from a given image path.
+
+  Args:
+      image_path (str): Path to the image file.
+
+  Returns:
+      dict: A dictionary containing the extracted image properties.
+  """
+
+  try:
+    with Image.open(image_path) as img:
+      properties = {
+          "created_time": img.info.get("date", "Unknown"),
+          "modified_time": img.info.get("time", "Unknown"),
+          "size": img.size,
+          "width": img.width,
+          "height": img.height,
+          "resolution": img.info.get("dpi", (0, 0)),
+          "format": img.format,
+      }
+
+      return properties
+
+  except Exception as e:
+    print(f"Error extracting image properties: {e}")
+    return None
+
+# Example usage
+image_path = "path/to/your/image.jpg"  # Replace with the actual path to your image
+image_properties = extract_image_properties(image_path)
+
+if image_properties:
+  print("Image Properties:")
+  print(f"Created Time: {image_properties['created_time']}")
+  print(f"Modified Time: {image_properties['modified_time']}")
+  print(f"Size: {image_properties['size']}")
+  print(f"Width: {image_properties['width']}")
+  print(f"Height: {image_properties['height']}")
+  print(f"Resolution: {image_properties['resolution']}")
+  print(f"Format: {image_properties['format']}")
