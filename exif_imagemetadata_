@@ -240,3 +240,83 @@ if __name__ == '__main__':
         print("Google Maps link:", google_maps_link)
     else:
         print("Location information not found in EXIF data.")
+
+
+
+## New2
+
+import exifread
+from geopy.geocoders import Nominatim
+
+def extract_exif_data(image_path):
+    """Extracts EXIF data from an image and returns it as a dictionary.
+
+    Args:
+        image_path: Path to the image file.
+
+    Returns:
+        Dictionary containing EXIF data.
+    """
+
+    with open(image_path, 'rb') as f:
+        tags = exifread.process_file(f)
+
+    return tags
+
+def get_exif_information(exif_data):
+    """Extracts relevant EXIF information and returns it as a dictionary.
+
+    Args:
+        exif_data: Dictionary containing EXIF data.
+
+    Returns:
+        Dictionary containing relevant EXIF information.
+    """
+
+    information = {}
+    information['Model'] = exif_data.get('Image Model', 'Unknown')
+    information['Aperture'] = exif_data.get('EXIF ApertureValue', 'Unknown')
+    information['Exposure Time'] = exif_data.get('EXIF ExposureTime', 'Unknown')
+    information['ISO Speed'] = exif_data.get('EXIF ISOSpeedRatings', 'Unknown')
+    information['Focal Length'] = exif_data.get('EXIF FocalLength', 'Unknown')
+    information['Date and Time'] = exif_data.get('EXIF DateTimeOriginal', 'Unknown')
+    information['Location'] = get_location_coordinates(exif_data)
+    information['Google Maps Link'] = get_google_maps_link(information['Location'])
+
+    return information
+
+def get_location_coordinates(exif_data):
+    """Extracts location coordinates from EXIF data and returns them as a tuple.
+
+    Args:
+        exif_data: Dictionary containing EXIF data.
+
+    Returns:
+        Tuple of latitude and longitude coordinates.
+    """
+
+    # ... (same as before)
+
+def get_google_maps_link(location):
+    """Generates a Google Maps link for the given location.
+
+    Args:
+        location: Tuple of latitude and longitude coordinates.
+
+    Returns:
+        Google Maps link.
+    """
+
+    if location:
+        latitude, longitude = location
+        return f"https://www.google.com/maps/place/{latitude},{longitude}"
+    else:
+        return "Location information not found"
+
+if __name__ == '__main__':
+    image_path = "path/to/your/image.jpg"  # Replace with the actual path to your image
+
+    exif_data = extract_exif_data(image_path)
+    exif_information = get_exif_information(exif_data)
+
+    print(exif_information)
