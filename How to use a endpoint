@@ -1,7 +1,7 @@
 
 # Create and seperate the text from a column into columns for dataframe
 
-mport pandas as pd
+import pandas as pd
 
 # Assuming your DataFrame is named 'df' and the column containing the strings is 'data'
 df = pd.DataFrame({'data': ['Consumer Insurance, ABC, home loan, Customer Service']})
@@ -111,3 +111,45 @@ def process_dataframe(dataframe):
 # Call the process_dataframe function with your DataFrame
 processed_df = process_dataframe(your_dataframe.copy())
 print(processed_df)
+
+
+############
+def process_dataframe(dataframe):
+    # Initialize an empty list to store answers and metadata
+    answers = []
+    metadata = []
+
+    for _, row in dataframe.iterrows():
+        # Create payload JSON for the current row
+        payload_json = create_payload({"dataframe_split": {
+            "columns": ["questions", "filters"],
+            "data": [[
+                row["questions"],
+                {
+                    "line_of_business": [row["line_of_business"]],
+                    "brand": [row["brand"]],
+                    "business_unit": [row["business_unit"]],
+                    "product": [row["product"]],
+                    "team": [item.strip() for item in row["team"].split(",")]
+                }
+            ]]
+        }})
+
+        # Call score_model and extract answers and metadata
+        response = score_model(payload_json)
+        try:
+            answers.append(response["predictions"]["answers"])
+            metadata.append(response["predictions"]["metadata"])
+        except KeyError:
+            # Handle cases where "predictions" or specific keys are missing
+            print(f"Error processing row {row['questions']}: Missing keys in response.")
+
+        # Add a 3-second sleep before the next iteration
+        time.sleep(3)
+
+    # Add answers and metadata columns to the DataFrame
+    dataframe["answer"] = answers
+    dataframe["metadata"] = metadata
+
+    return dataframe
+##########
