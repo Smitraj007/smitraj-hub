@@ -1,0 +1,55 @@
+import pandas as pd
+import re
+
+def extract_entities_from_context(context):
+    """Extracts brand, product, and business unit from the context string.
+
+    Args:
+        context (str): The context string.
+
+    Returns:
+        dict: A dictionary containing extracted entities.
+    """
+
+    entities = {}
+    matches = re.findall(r"(\w+ Bank Loan|Customer Service)", context)
+    entities["business_unit"] = [match for match in matches if "Bank Loan" in match]
+    entities["line_of_business"] = [match for match in matches if "Customer Service" in match]
+    matches = re.findall(r"(\w+)", context)
+    entities["brand"] = [match for match in matches if match not in entities.values()]
+    entities["product"] = [match for match in matches if match not in entities.values()]
+    return entities
+
+def create_payload(dataframe):
+    """Creates the desired payload from the dataframe.
+
+    Args:
+        dataframe (pd.DataFrame): The input dataframe.
+
+    Returns:
+        dict: The constructed payload.
+    """
+
+    payload = {
+        "dataframe_split": {
+            "columns": ["questions", "filters"],
+            "data": []
+        }
+    }
+
+    for index, row in dataframe.iterrows():
+        question = row["questions"]
+        context = row["context"]
+        entities = extract_entities_from_context(context)
+        payload["dataframe_split"]["data"].append([question, entities])
+
+    return payload
+
+# Load your Excel data into a Pandas dataframe
+dataframe = pd.read_excel("your_excel_file.xlsx")
+
+# Create the payload
+payload = create_payload(dataframe)
+
+# Print or use the payload as needed
+print(payload)
