@@ -1,55 +1,113 @@
-import pandas as pd
-import re
 
-def extract_entities_from_context(context):
-    """Extracts brand, product, and business unit from the context string.
+# Create and seperate the text from a column into columns for dataframe
 
-    Args:
-        context (str): The context string.
+mport pandas as pd
 
-    Returns:
-        dict: A dictionary containing extracted entities.
-    """
+# Assuming your DataFrame is named 'df' and the column containing the strings is 'data'
+df = pd.DataFrame({'data': ['Consumer Insurance, ABC, home loan, Customer Service']})
 
-    entities = {}
-    matches = re.findall(r"(\w+ Bank Loan|Customer Service)", context)
-    entities["business_unit"] = [match for match in matches if "Bank Loan" in match]
-    entities["line_of_business"] = [match for match in matches if "Customer Service" in match]
-    matches = re.findall(r"(\w+)", context)
-    entities["brand"] = [match for match in matches if match not in entities.values()]
-    entities["product"] = [match for match in matches if match not in entities.values()]
-    return entities
+# Split the strings into a list of components
+df['components'] = df['data'].str.split(', ')
+
+# Create new columns from the list
+df['Line of Business'] = df['components'].apply(lambda x: x[0])
+df['Brand'] = df['components'].apply(lambda x: x[1])
+df['Product'] = df['components'].apply(lambda x: x[2])
+df['Business Unit'] = df['components'].apply(lambda x: x[3])
+
+# Drop the temporary 'components' column
+df.drop('components', axis=1, inplace=True)
+
+print(df)
+
+
+########################################## 
+
+import time
 
 def create_payload(dataframe):
-    """Creates the desired payload from the dataframe.
+    data_list = [
+        {
+            "questions": row["questions"],
+            "filters": {
+                "line_of_business": [row["line_of_business"]],
+                "brand": [row["brand"]],
+                "business_unit": [row["business_unit"]],
+                "product": [row["product"]],
+                "team": [item.strip() for item in row["team"].split(",")]
+            }
+        }
+        for _, row in dataframe.iterrows()
+    ]
 
-    Args:
-        dataframe (pd.DataFrame): The input dataframe.
-
-    Returns:
-        dict: The constructed payload.
-    """
-
+    # Create the payload dictionary
     payload = {
         "dataframe_split": {
             "columns": ["questions", "filters"],
-            "data": []
+            "data": data_list
         }
     }
 
-    for index, row in dataframe.iterrows():
-        question = row["questions"]
-        context = row["context"]
-        entities = extract_entities_from_context(context)
-        payload["dataframe_split"]["data"].append([question, entities])
+    payload_json = json.dumps(payload, allow_nan=True)
 
-    return payload
+    return payload_json
 
-# Load your Excel data into a Pandas dataframe
-dataframe = pd.read_excel("your_excel_file.xlsx")
+def score_model(payload_json):
+    url = "https://dev_env.cloud.databricks.com/serving-endpoints/project_dev_rag_pipiline/invocations"  # Replace with your actual endpoint URL
 
-# Create the payload
-payload = create_payload(dataframe)
+    headers = {
+        'Authorization': f'Bearer {os.environ.get("DATABRICKS_TOKEN")}',
+        'Content-Type': 'application/json'
+    }
 
-# Print or use the payload as needed
-print(payload)
+    # Send POST request
+    response = requests.post(url, headers=headers, data=payload_json)
+
+    # Check response status
+    if response.status_code != 200:
+        raise Exception(f'Request failed with status {response.status_code}, {response.text}')
+
+    return response.json()
+
+def process_dataframe(dataframe):
+    # Initialize an empty list to store answers and metadata
+    answers = []
+    metadata = []
+
+    for _, row in dataframe.iterrows():
+        # Create payload JSON for the current row
+        payload_json = create_payload({"dataframe_split": {
+            "columns": ["questions", "filters"],
+            "data": [{
+                "questions": row["questions"],
+                "filters": {
+                    "line_of_business": [row["line_of_business"]],
+                    "brand": [row["brand"]],
+                    "business_unit": [row["business_unit"]],
+                    "product": [row["product"]],
+                    "team": [item.strip() for item in row["team"].split(",")]
+                }
+            }]
+        }})
+
+        # Call score_model and extract answers and metadata
+        response = score_model(payload_json)
+        try:
+            answers.append(response["predictions"]["answers"])
+            metadata.append(response["predictions"]["metadata"])
+        except KeyError:
+            # Handle cases where "predictions" or specific keys are missing
+            print(f"Error processing row {row['questions']}: Missing keys in response.")
+
+        # Add a 3-second sleep before the next iteration
+        time.sleep(3)
+
+    # Add answers and metadata columns to the DataFrame
+    dataframe["answer"] = answers
+    dataframe["metadata"] = metadata
+
+    return dataframe
+
+# Call the process_dataframe function with your DataFrame
+processed_df = process_dataframe(your_dataframe.copy())
+print(processed_df)
