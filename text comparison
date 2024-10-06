@@ -1,0 +1,47 @@
+import pandas as pd
+from sklearn.metrics import f1_score, accuracy_score
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Load data
+file1 = pd.read_excel("file1.xlsx")
+file2 = pd.read_excel("file2.xlsx")
+file3 = pd.read_excel("file3.xlsx")
+
+# Preprocess data (if needed)
+def preprocess(text):
+    # Remove stop words and punctuation
+    stop_words = set(stopwords.words('english'))
+    words = word_tokenize(text)
+    filtered_words = [word for word in words if word not in stop_words]
+    return ' '.join(filtered_words)
+
+# Calculate cosine similarity
+vectorizer = TfidfVectorizer()
+vectors1 = vectorizer.fit_transform(file1['answer'])
+vectors2 = vectorizer.transform(file2['answer'])
+similarity_scores = cosine_similarity(vectors1, vectors2)
+
+# Calculate F1-score and confidence
+y_true = file3['answer']
+y_pred1 = file1['answer']
+y_pred2 = file2['answer']
+
+# Convert answers to binary labels (assuming ground truth is correct)
+y_true_binary = [1 if answer == y_true[i] else 0 for i, answer in enumerate(y_pred1)]
+
+f1_score1 = f1_score(y_true_binary, y_pred1)
+f1_score2 = f1_score(y_true_binary, y_pred2)
+
+# Calculate confidence (e.g., using accuracy)
+confidence1 = accuracy_score(y_true_binary, y_pred1)
+confidence2 = accuracy_score(y_true_binary, y_pred2)
+
+# Create output file
+output_data = {'Similarity': similarity_scores.flatten(),
+               'F1-Score': [f1_score1, f1_score2],
+               'Confidence': [confidence1, confidence2]}
+output_df = pd.DataFrame(output_data)
+output_df.to_excel("output.xlsx", index=False)
