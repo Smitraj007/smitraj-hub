@@ -22,3 +22,48 @@ def extract_article_id(text):
 text = "{article_id:10234hfjc,}asdkjhreirj ewrg pijsdf dspsfmg df-jb efgks ergpij b'sfpkg -sj- {article_id:Oqi1947f8, asdahdasds snfd ihpdfg j]preg [rjg eprg}"
 article_id = extract_article_id(text)
 print(article_id)  # Output: 10234hfjc
+
+
+#############
+
+import pandas as pd
+import re
+
+def extract_article_ids(text):
+  """Extracts all article IDs from the given text.
+
+  Args:
+    text: The input text.
+
+  Returns:
+    A list of extracted article IDs.
+  """
+
+  pattern = r'article_id:\s*(?P<article_id>[A-Za-z0-9]{9})'
+  matches = re.findall(pattern, text)
+  return matches
+
+def extract_article_ids_from_excel(file_path, column_name):
+  """Extracts article IDs from a specified column in an Excel file.
+
+  Args:
+    file_path: The path to the Excel file.
+    column_name: The name of the column containing the text data.
+
+  Returns:
+    A new DataFrame with an additional column containing the extracted article IDs.
+  """
+
+  # Read the Excel file into a DataFrame
+  df = pd.read_excel(file_path)
+
+  # Extract article IDs for each row
+  df['article_ids'] = df[column_name].apply(extract_article_ids)
+
+  return df
+
+# Example usage
+file_path = 'your_file.xlsx'
+column_name = 'your_column_name'
+result_df = extract_article_ids_from_excel(file_path, column_name)
+print(result_df)
