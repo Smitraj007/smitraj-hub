@@ -1,0 +1,40 @@
+import pandas as pd
+
+def compare_files(file1, file2):
+  """Compares two Excel files based on answer and metadata columns.
+
+  Args:
+    file1: Path to the first Excel file.
+    file2: Path to the second Excel file.
+
+  Returns:
+    A new DataFrame with additional columns for match type.
+  """
+
+  # Read the Excel files into DataFrames
+  df1 = pd.read_excel(file1)
+  df2 = pd.read_excel(file2)
+
+  # Merge the DataFrames based on answer or metadata columns
+  merged_df = pd.merge(df1, df2, on=['answer', 'metadata'], how='outer', suffixes=('_x', '_y'))
+
+  # Create a new column to indicate the match type
+  def determine_match_type(row):
+    if pd.isnull(row['answer_x']) or pd.isnull(row['answer_y']) or pd.isnull(row['metadata_x']) or pd.isnull(row['metadata_y']):
+      return 'No Match'
+    elif (row['answer_x'] == row['answer_y']) and (row['metadata_x'] == row['metadata_y']):
+      return 'Exact Match'
+    elif (row['answer_x'] == row['answer_y']) or (row['metadata_x'] == row['metadata_y']):
+      return 'Partial Match'
+    else:
+      return 'No Match'
+
+  merged_df['match_type'] = merged_df.apply(determine_match_type, axis=1)
+
+  return merged_df
+
+# Example usage
+file1_path = 'file1.xlsx'
+file2_path = 'file2.xlsx'
+result_df = compare_files(file1_path, file2_path)
+print(result_df)
