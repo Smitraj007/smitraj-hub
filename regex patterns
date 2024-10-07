@@ -1,0 +1,24 @@
+import re
+
+def extract_article_id(text):
+  """Extracts the article ID from the given text.
+
+  Args:
+    text: The input text.
+
+  Returns:
+    The extracted article ID, or None if not found.
+  """
+
+  pattern = r'article_id:\s*(?P<article_id>[A-Za-z0-9]{9})'
+  match = re.search(pattern, text)
+
+  if match:
+    return match.group('article_id')
+  else:
+    return None
+
+# Example usage
+text = "{article_id:10234hfjc,}asdkjhreirj ewrg pijsdf dspsfmg df-jb efgks ergpij b'sfpkg -sj- {article_id:Oqi1947f8, asdahdasds snfd ihpdfg j]preg [rjg eprg}"
+article_id = extract_article_id(text)
+print(article_id)  # Output: 10234hfjc
