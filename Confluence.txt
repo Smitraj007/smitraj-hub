@@ -1,0 +1,54 @@
+1. Data Ingestion
+Types of Failures:
+
+Type 1:
+
+Applies to both Full Load and Delta Load.
+Possible failures during pipeline execution, such as timeout, outage, or incorrect load selection.
+Type 2:
+
+Specific to Delta Load.
+Issues with curated data or vectors caused by raw data, chunks, or Azure OpenAI-related issues.
+Handling Failures:
+
+Use the recovery job to restore the pipeline to the last successful state via a time-travel-based recovery approach.
+2. RAG Model Serving
+Possible Causes of Job Failure:
+
+Missing or inappropriate rights for the service principal to access attributes defined in configuration YAML files.
+Incorrect routing to the appropriate vector database and index table.
+Configuration errors in YAML files, such as missing or incorrect parameters (e.g., model settings, database paths).
+Service connectivity issues, such as network disruptions impacting communication with the vector database or external APIs.
+Resource limitations, including insufficient compute capacity for vector operations or model inference.
+Data unavailability, such as missing or incomplete vectors in the index table.
+Timeout or latency issues during vector search or model inference.
+Handling Failures:
+
+Manual Debugging of Code: Primary solution to identify and resolve errors.
+Re-running Jobs: Re-trigger the job after resolving the identified issue.
+Preventive Actions:
+Ensure proper configuration of YAML files and validate service principal permissions.
+Monitor and resolve resource constraints and connectivity issues.
+3. Monitoring
+Quality Monitoring
+Possible Causes of Failure:
+
+Misconfigured validation rules that classify valid data as invalid.
+Missing values or incorrect schema in ingested data disrupting validations.
+Drift Monitoring
+Possible Causes of Failure:
+
+Mismatched schema versions causing failure in historical and current data distribution comparison.
+Missing reference datasets or skewed sampling resulting in undetected drift.
+Operation Monitoring
+Possible Causes of Failure:
+
+Incorrect log parsing logic leading to failure in metrics aggregation jobs.
+Misconfigured thresholds preventing accurate SLA alerts generation.
+Handling Failures:
+
+Debugging Code: Analyze logs for error messages and investigate specific issues like the "cannot open socket" error.
+Re-running Jobs: Resume failed jobs after resolving underlying problems.
+Preventive Actions:
+Implement robust error handling and improve logging mechanisms.
+Monitor and maintain cluster performance metrics.
