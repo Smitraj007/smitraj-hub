@@ -13,14 +13,28 @@ Handling Failures:
 
 Use the recovery job to restore the pipeline to the last successful state via a time-travel-based recovery approach.
 2. RAG Model Serving
-Possible Causes of Job Failure:
+Types of Failures:
+
+Type 1:
 
 Missing or inappropriate rights for the service principal to access attributes defined in configuration YAML files.
+Type 2:
+
 Incorrect routing to the appropriate vector database and index table.
+Type 3:
+
 Configuration errors in YAML files, such as missing or incorrect parameters (e.g., model settings, database paths).
+Type 4:
+
 Service connectivity issues, such as network disruptions impacting communication with the vector database or external APIs.
+Type 5:
+
 Resource limitations, including insufficient compute capacity for vector operations or model inference.
+Type 6:
+
 Data unavailability, such as missing or incomplete vectors in the index table.
+Type 7:
+
 Timeout or latency issues during vector search or model inference.
 Handling Failures:
 
@@ -30,20 +44,25 @@ Preventive Actions:
 Ensure proper configuration of YAML files and validate service principal permissions.
 Monitor and resolve resource constraints and connectivity issues.
 3. Monitoring
-Quality Monitoring
-Possible Causes of Failure:
+Types of Failures:
+
+Type 1:
 
 Misconfigured validation rules that classify valid data as invalid.
-Missing values or incorrect schema in ingested data disrupting validations.
-Drift Monitoring
-Possible Causes of Failure:
+Type 2:
 
-Mismatched schema versions causing failure in historical and current data distribution comparison.
+Missing values or incorrect schema in ingested data disrupting validations.
+Type 3:
+
+Mismatched schema versions causing failure in historical and current data distribution comparison (drift monitoring).
+Type 4:
+
 Missing reference datasets or skewed sampling resulting in undetected drift.
-Operation Monitoring
-Possible Causes of Failure:
+Type 5:
 
 Incorrect log parsing logic leading to failure in metrics aggregation jobs.
+Type 6:
+
 Misconfigured thresholds preventing accurate SLA alerts generation.
 Handling Failures:
 
